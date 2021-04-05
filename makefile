@@ -7,8 +7,8 @@ EXECUTABLE = my-shell
 all: $(EXECUTABLE)
 
 debug:
-	$(CC) $(CFLAGS) -c -g *.c
-	$(CC) $(CFLAGS) -g -o $(EXECUTABLE) $(OBJS)
+	$(CC) $(CFLAGS) -c -g -D DEBUG *.c
+	$(CC) $(CFLAGS) -g -D DEBUG -o $(EXECUTABLE) $(OBJS)
 
 test-list:
 	$(CC) $(CFLAGS) -c -g command.c word.c test-list.c

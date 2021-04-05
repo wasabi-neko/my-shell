@@ -44,6 +44,15 @@ int parse_word(list_t *head, char *str)
     int *argc = NULL;           /* will point to the `oper_id` of the first word(argument) */
 
     while (!end_of_str) {
+        #ifdef DEBUG
+        LIST_FOREACH(ptr, head) {
+            word_t *_ptr = LIST_DATA_PTR(ptr, word_t);
+            printf("(%s %d),", _ptr->str, _ptr->oper_id);
+        }
+        printf("\n");
+        #endif
+
+
         /* Read one word until space or operator symbol */
         char *word_str_ptr = read_ptr;      /* init the staring position */
         oper_symbol_t symbol = oper_symbols.not_a_symbol;
@@ -69,51 +78,47 @@ int parse_word(list_t *head, char *str)
             read_ptr++;
         } /* END read one word */
         word_len = strlen(word_str_ptr) + 1;    /* !Attantion the `word_len` will be 0 when encountered an operator*/
-        if (word_len <= 1 && IS_NOT_A_SYMBOL(symbol)) {
-            continue;       /* only a space!, skipped! */
-        }
 
-        printf("#%s#", word_str_ptr);
-        
-        /* Get next word_node(list_t) */
-        cur_word = list_get_next(head, cur_word, sizeof(word_t));
-        if (cur_word == NULL) {
-            return -1;
-        }
-
-        /* Set new argc target(the first argument of the command) */
-        if (argc == NULL) {
-            argc = &(LIST_DATA_PTR(cur_word, word_t)->oper_id);
-            *argc = 0;
-        }
-
-        /* Store one word into current cur_word,
-            if the space for string is inefficient then allocate a new space */
-        word_t *word_ptr = LIST_DATA_PTR(cur_word, word_t);
-        if (word_ptr->str == NULL) {
-            word_ptr->str = malloc(word_len);
-            if (word_ptr->str == NULL) {
-                perror("malloc error");
+        if (word_len > 1) {
+            /* Get next word_node(list_t) */
+            cur_word = list_get_next(head, cur_word, sizeof(word_t));
+            if (cur_word == NULL) {
                 return -1;
             }
 
-        } else if (word_len > strlen(word_ptr->str)) {
-            word_ptr->str = realloc(word_ptr->str, word_len);
-            if (word_ptr->str == NULL) {
-                perror("malloc error");
-                return -1;
+            /* Set new argc target(the first argument of the command) */
+            if (argc == NULL) {
+                argc = &(LIST_DATA_PTR(cur_word, word_t)->oper_id);
+                *argc = 0;
             }
+
+            /* Store one word into current cur_word,
+                if the space for string is inefficient then allocate a new space */
+            word_t *word_ptr = LIST_DATA_PTR(cur_word, word_t);
+            if (word_ptr->str == NULL) {
+                word_ptr->str = malloc(word_len);
+                if (word_ptr->str == NULL) {
+                    perror("malloc error");
+                    return -1;
+                }
+
+            } else if (word_len > strlen(word_ptr->str)) {
+                word_ptr->str = realloc(word_ptr->str, word_len);
+                if (word_ptr->str == NULL) {
+                    perror("malloc error");
+                    return -1;
+                }
+            }
+            /* Copy the string */
+            strncpy(word_ptr->str, word_str_ptr, word_len);
+            word_ptr->str[word_len - 1] = '\0';
+            /* Increse the arguments count */
+            (*argc)++;
+            word_ptr = NULL;
         }
-        /* Copy the string */
-        strncpy(word_ptr->str, word_str_ptr, word_len);
-        word_ptr->str[word_len - 1] = '\0';
-        /* Increse the arguments count */
-        (*argc)++;
-        word_ptr = NULL;
         /* End of saveing a word */
 
         /* Deal with the operator if there's any*/
-        printf("(%d)\n", symbol.id);
         if (!IS_NOT_A_SYMBOL(symbol)) {
             /* the next word may be a old used memroy from last command */
             cur_word = list_get_next(head, cur_word, sizeof(word_t));
@@ -121,8 +126,6 @@ int parse_word(list_t *head, char *str)
             if (cur_word == NULL) {
                 return -1;
             }
-
-            printf("TEST: %s, %d\n", LIST_DATA_PTR(cur_word, word_t)->str, LIST_DATA_PTR(cur_word, word_t)->oper_id);
 
             if (LIST_DATA_PTR(cur_word, word_t)->str != NULL) {
                 free(LIST_DATA_PTR(cur_word, word_t)->str);
