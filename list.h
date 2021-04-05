@@ -1,4 +1,5 @@
-// #include <stddef.h>
+#include <string.h>
+
 #ifndef LIST_HEADER
 #define LIST_HEADER
 
@@ -9,19 +10,18 @@ typedef struct LIST_T {
 } list_t;
 
 #ifndef LIST_NEW_NODE
-#define LIST_NEW_NODE(type) \
-    _new_list_node_type(sizeof(type))
+#define LIST_NEW_NODE(type) _new_list_node_type(sizeof(type))
 #endif
 
 #ifndef LIST_GET_DATA
-#define LIST_GET_DATA(dst, src) \
-    if (src != NULL) { \
-        dst = (typeof(dst) *)(src->data); \
+#define LIST_GET_DATA(dst, src)             \
+    if (src != NULL) {                      \
+        dst = (typeof(dst) *)(src->data);   \
     }
 #endif
 
 #ifndef LIST_DATA_PTR
-#define LIST_DATA_PTR(head, type) ((type *)head->data)
+#define LIST_DATA_PTR(node, type) ((type *)node->data)
 #endif
 
 #ifndef LIST_FOREACH
@@ -30,6 +30,7 @@ typedef struct LIST_T {
 #endif
 
 
+/* The head of the list is also the tail */
 static inline int list_init(list_t *head)
 {
     if (head == NULL) {
@@ -40,15 +41,17 @@ static inline int list_init(list_t *head)
     return 0;
 }
 
+/**
+ * @return the pointer point to list_t (which `data` set to all 0)
+ */
 static inline list_t *_new_list_node_type(unsigned long type_size) {
     list_t *tmp = malloc(sizeof(list_t) + type_size);
     if (tmp == NULL) {
         perror("malloc failed");
         return NULL;
     }
-    if (list_init(tmp) != 0) {
-        return NULL;
-    }
+    list_init(tmp);
+    memset(tmp->data, 0, type_size);
     return tmp;
 }
 
@@ -79,7 +82,9 @@ static inline int is_list_empty(list_t *head)
 }
 
 /**
- * Free The from node; but the node to will not be freed
+ * Free The `from` node; but the `to` node will not be freed
+ * @param from The node start to free (will be freed)
+ * @param to The end (will not be freed)
  */
 static inline int list_free(list_t *from, list_t *to, void (*free_func_ptr)(void*))
 {
@@ -144,7 +149,10 @@ static inline int list_remove_tail(list_t *head) {
     return 0;
 }
 
-/* IF the current node is the last one, the function will malloc a new node and push it to the list and return it*/
+/** 
+ * IF the current node is the last one, the function will malloc a new node and push it to the list and return it
+ * @return a list_t pointer point to an initialized node
+ * */
 static inline list_t *list_get_next(list_t *head, list_t *current, unsigned long type_size)
 {
     if (head == NULL) {
@@ -166,4 +174,4 @@ static inline list_t *list_get_next(list_t *head, list_t *current, unsigned long
     return current->next;
 }
 
-#endif
+#endif  // End ifndef LIST_HEADER

@@ -5,6 +5,10 @@ EXECUTABLE = my-shell
 
 all: $(EXECUTABLE)
 
+debug:
+	$(CC) $(CFLAGS) -c -g *.c
+	$(CC) $(CFLAGS) -g -o $(EXECUTABLE) $(OBJS)
+
 test-list:
 	$(CC) $(CFLAGS) -c -g command.c word.c test-list.c
 	$(CC) $(CFLAGS) -g -o test-list.out command.o word.o test-list.o

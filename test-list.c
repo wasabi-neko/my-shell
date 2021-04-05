@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 
     /* Use `valgrind` to test free methods */
-    list_free(cmd_list->next,  cmd_list, &_free_cmd_inside);
+    list_free(cmd_list->next->next,  cmd_list, &free_cmd_inside);
     free(cmd_list);
 
     printf("Done! everything seems OK!\n");

@@ -1,7 +1,10 @@
 // command.h
+#ifndef COMMAND_HEADER
+#define COMMAND_HEADER
 
 #include <wait.h>
 
+#include "list.h"
 #include "word.h"
 
 #define CMD_NUM 3
@@ -23,8 +26,10 @@ typedef struct COMMAND_T {
 // return the length of the command, -1 if error
 int init_cmd(cmd_t* cmd);
 
-void _free_cmd_inside(void* cmd);
+void free_cmd_inside(void* cmd);
 
 // parse commands from input words
 // @return the real command array size, if error then return -1
 int parse_cmd(cmd_t* cmds, int max_cmd_size, word_t *words, int len);
+
+#endif /* END ifndef COMMAND_HEADER */

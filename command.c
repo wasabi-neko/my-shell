@@ -28,7 +28,7 @@ int init_cmd(cmd_t* cmd)
     return 0;
 }
 
-void _free_cmd_inside(void* cmd)
+void free_cmd_inside(void* cmd)
 {
     cmd_t *_cmd = (cmd_t *)(cmd);
     if (_cmd->name != NULL) {
