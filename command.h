@@ -2,25 +2,22 @@
 #ifndef COMMAND_HEADER
 #define COMMAND_HEADER
 
-#include <wait.h>
-
 #include "list.h"
 #include "word.h"
 
-#define CMD_NUM 3
-#define CMD_NAMESIZE 100
-#define CMD_ARG_ARR_SIZE 10
-#define CMD_ARG_STR_SIZE 10
+#define FD_READ_END 0
+#define FD_WRITE_END 1
 
 typedef struct COMMAND_T {
     char *name;
     int argc;
     char **argv;
-    int fd_r;
+    int fd_r;           /* file descriptor */
     int fd_w;
     int fd_err;
-    char *filename_in;
-    char *filename_out;
+    /* Just use the char data[] to store the string */
+    char *filein_name;   /* file in */
+    char *fileout_name;  /* file out */
     pid_t pid;
     int status;
 } cmd_t;

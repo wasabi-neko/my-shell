@@ -11,6 +11,8 @@
         "*.tcc": "c",
         "cstdint": "c",
         "typeinfo": "c",
-        "command.h": "c"
+        "command.h": "c",
+        "string.h": "c",
+        "stdio.h": "c"
     }
 }

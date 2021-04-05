@@ -24,6 +24,11 @@ typedef struct LIST_T {
 #define LIST_DATA_PTR(node, type) ((type *)node->data)
 #endif
 
+#ifndef LIST_DEF_DATA_PTR
+#define LIST_DEF_DATA_PTR(type, data_ptr, list_ptr) \
+    type *data_ptr = LIST_DATA_PTR(list_t, type);
+#endif
+
 #ifndef LIST_FOREACH
 #define LIST_FOREACH(ptr, head) \
     for (list_t *ptr = head->next; ptr != head; ptr = ptr->next)

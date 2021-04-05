@@ -17,8 +17,6 @@
 //----------------------------------------------------------------
 // Define
 //----------------------------------------------------------------
-#define FD_READ_END 0
-#define FD_WRITE_END 1
 #define INPUT_BUFSIZE 128
 
 /** ----------------------------------------------------------------
@@ -43,6 +41,7 @@ int execute_cmd(cmd_t* cmds, int len);  // TODO: execute_cmd
  * ----------------------------------------------------------------*/
 int main(int argc, char **argv)
 {
+
     // TODO: preprocess e.t. read .src file
     /* Init list */
     list_t *cmd_head = LIST_NEW_NODE(cmd_t);

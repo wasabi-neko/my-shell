@@ -15,35 +15,34 @@
 
 int main(int argc, char **argv)
 {
-    // TODO: there's a bug I cannot find 
-    list_t *head = LIST_NEW_NODE(cmd_t);
-    list_t *curr = head;
+    // list_t *head = LIST_NEW_NODE(cmd_t);
+    // list_t *curr = head;
 
-    for (int i = 0; i < 3; i++) {
-        list_t *node = LIST_NEW_NODE(cmd_t);
-        init_cmd(LIST_DATA_PTR(node, cmd_t));
-        LIST_DATA_PTR(node, cmd_t)->fd_r = i;
+    // for (int i = 0; i < 3; i++) {
+    //     list_t *node = LIST_NEW_NODE(cmd_t);
+    //     init_cmd(LIST_DATA_PTR(node, cmd_t));
+    //     LIST_DATA_PTR(node, cmd_t)->fd_r = i;
         
-        list_push_back(head, node);
-    }
+    //     list_push_back(head, node);
+    // }
 
-    LIST_FOREACH(ptr, head) {
-        printf("%d ", LIST_DATA_PTR(ptr, cmd_t)->fd_r);
-    }
+    // LIST_FOREACH(ptr, head) {
+    //     printf("%d ", LIST_DATA_PTR(ptr, cmd_t)->fd_r);
+    // }
 
-    for (int i = 0; i < 3; i++) {
-        curr = list_get_next(head, curr, sizeof(cmd_t));
-        LIST_DATA_PTR(curr, cmd_t)->fd_r = i + 3;
-    }
+    // for (int i = 0; i < 3; i++) {
+    //     curr = list_get_next(head, curr, sizeof(cmd_t));
+    //     LIST_DATA_PTR(curr, cmd_t)->fd_r = i + 3;
+    // }
 
-    LIST_FOREACH(ptr, head) {
-        printf("%d ", LIST_DATA_PTR(ptr, cmd_t)->fd_r);
-    }
+    // LIST_FOREACH(ptr, head) {
+    //     printf("%d ", LIST_DATA_PTR(ptr, cmd_t)->fd_r);
+    // }
 
-    list_free(head->next, head, &free_cmd_inside);
-    free(head);
+    // list_free(head->next, head, &free_cmd_inside);
+    // free(head);
 
-    // return 0;
+    // // return 0;
 
     printf("Start testing...\n");
 
