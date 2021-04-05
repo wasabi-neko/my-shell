@@ -11,7 +11,7 @@
 typedef struct COMMAND_T {
     char *name;
     int argc;
-    char **argv;
+    char **argv;   /* a pointer point to string array */
     int fd_r;           /* file descriptor */
     int fd_w;
     int fd_err;
@@ -22,10 +22,11 @@ typedef struct COMMAND_T {
     int status;
 } cmd_t;
 
+int strcpy_malloc(char **dst, const char *src) ;
+
 // return the length of the command, -1 if error
 int init_cmd(cmd_t* cmd);
-
 void free_cmd_inside(void* cmd);
-
+void print_cmd(const cmd_t* cmd);
 int parse_cmd(list_t *cmd_head, list_t *word_head);
 #endif /* END ifndef COMMAND_HEADER */

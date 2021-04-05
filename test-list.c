@@ -13,6 +13,21 @@
         exit(-1); \
     }
 
+void play_ground() 
+{
+    list_t *list = LIST_NEW_NODE(word_t);
+    word_t *word_ptr = LIST_DATA_PTR(list, word_t);
+    word_ptr->str = malloc(sizeof(char) * 10);
+
+    word_ptr->str[0] = 'a';
+    word_ptr->str[1] = 'b';
+    word_ptr->str[2] = '\0';
+
+    printf("%d\n", word_ptr == list->data);
+    printf("#%s#\n", word_ptr->str);
+    printf("#%s#\n", LIST_DATA_PTR(list, word_t)->str);
+}
+
 int main(int argc, char **argv)
 {
     // list_t *head = LIST_NEW_NODE(cmd_t);

@@ -44,13 +44,13 @@ int parse_word(list_t *head, char *str)
     int *argc = NULL;           /* will point to the `oper_id` of the first word(argument) */
 
     while (!end_of_str) {
-        #ifdef DEBUG
-        LIST_FOREACH(ptr, head) {
-            word_t *_ptr = LIST_DATA_PTR(ptr, word_t);
-            printf("(%s %d),", _ptr->str, _ptr->oper_id);
-        }
-        printf("\n");
-        #endif
+        // #ifdef DEBUG
+        // LIST_FOREACH(ptr, head) {
+        //     word_t *_ptr = LIST_DATA_PTR(ptr, word_t);
+        //     printf("(%s %d),", _ptr->str, _ptr->oper_id);
+        // }
+        // printf("\n");
+        // #endif
 
 
         /* Read one word until space or operator symbol */

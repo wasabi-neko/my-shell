@@ -103,7 +103,7 @@ int main(int argc, char **argv)
             continue;
         }
 
-        printf("#%s#\n", buf);
+        // printf("#%s#\n", buf);
         if (parse_word(word_head, buf) != 0) {
             perror("parse_word error");
             list_free(word_head->next, word_head, &free_word_inside);   /* reset word list */
@@ -114,6 +114,16 @@ int main(int argc, char **argv)
             printf("(%s, %d) ", word->str, word->oper_id);
         }
         printf("\n");
+
+        if (parse_cmd(cmd_head, word_head) != 0) {
+            perror("parse_cmd error");
+            list_free(cmd_head->next, cmd_head, &free_cmd_inside);
+            continue;
+        }
+        LIST_FOREACH(_ptr, cmd_head) {
+            cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
+            print_cmd(cmd);
+        }
 
         // printf("#%s#\n", basename(buf));
         fflush(stdout);

@@ -9,21 +9,22 @@
 #include "command.h"
 #include "symbol.h"
 
-static inline int strcpy_malloc(char *dst, const char *src) 
-{
-    if (dst != NULL || src == NULL) {
+int strcpy_malloc(char **dst, const char *src) 
+{   
+    if (src == NULL) {
         return -1;
     }
     int len = strlen(src) + 1;
 
-    dst = malloc(len);
-    if (dst == NULL) {
+    *dst = malloc(len);
+    if (*dst == NULL) {
         perror("malloc failed");
         return -1;
     }
 
-    strncpy(dst, src, len);
-    dst[len-1] = '\0';  // add an '\0' at end
+    strncpy(*dst, src, len);
+    (*dst)[len-1] = '\0';  // add an '\0' at end
+
     return 0;
 }
 
@@ -54,29 +55,39 @@ int init_cmd(cmd_t* cmd)
 void free_cmd_inside(void* cmd)
 {
     cmd_t *_cmd = (cmd_t *)(cmd);
-    if (_cmd->name != NULL) {
-        free(_cmd->name);
-    }
+    free(_cmd->name);
 
-    if (_cmd->argv != NULL) {
-        /* Free every string in the argv */
-        for (int i = 0; i < _cmd->argc; i++) {
-            if (_cmd->argv[i] != NULL) {
-                free(_cmd->argv[i]);
-            }
-        }
+    for (int i = 0; i < _cmd->argc; i++) {
+        free(_cmd->argv[i]);
     }
+    free(_cmd->argv);
+    free(_cmd->filein_name);
+    free(_cmd->fileout_name);
 
-    if (_cmd->argv != NULL) {
-        free(_cmd->argv);
+    if (_cmd->fd_r != STDIN_FILENO) {
+        close(_cmd->fd_r);
     }
+    if (_cmd->fd_w != STDOUT_FILENO) {
+        close(_cmd->fd_w);
+    }
+    if (_cmd->fd_err != STDERR_FILENO) {
+        close(_cmd->fd_err);
+    }
+}
 
-    if (_cmd->filein_name != NULL) {
-        free(_cmd->filein_name);
+void print_cmd(const cmd_t* cmd)
+{
+    printf("-----Print cmd-----\n");
+    printf("pid: %d\n", cmd->pid);
+    printf("name: %s\n", cmd->name);
+    printf("arg: ");
+    for (int i = 0; i < cmd->argc; i++) {
+        printf("%s, ", cmd->argv[i]);
     }
-    if (_cmd->fileout_name != NULL) {
-        free(_cmd->fileout_name);
-    }
+    printf("\n");
+    printf("fd(r:%d, w:%d)\n", cmd->fd_r, cmd->fd_w);
+    printf("file(in: %s, out: %s)\n", cmd->filein_name, cmd->fileout_name);
+    printf("\n");
 }
 
 int parse_cmd(list_t *cmd_head, list_t *word_head)
@@ -93,14 +104,14 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
     }
 
     /* Init */
-    int cmd_cnt = 0;
+    // int cmd_cnt = 0;
     int fd_r = STDIN_FILENO;
     int fd_w = STDOUT_FILENO;
     int fd_err = STDERR_FILENO;
     list_t *cur_cmd = cmd_head;
     list_t *cur_word = word_head->next;
 
-    // For all commands
+    // For each commands
     while (cur_word != word_head) {
         /* Get new command */
         cur_cmd = list_get_next(cmd_head, cur_cmd, sizeof(cmd_t));
@@ -116,61 +127,83 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
         /* Set command from word0 */
         word_t *arg0 = LIST_DATA_PTR(cur_word, word_t);    /* Firs arg */
         if (arg0->str == NULL) {
-            perror("syntax error");
+            perror("syntax error, use operator as first arg of command");
             return -1;
         }
         
-        strcpy_malloc(cmd_ptr->name, arg0->str);
+        if (strcpy_malloc(&cmd_ptr->name, arg0->str) != 0) {
+            return -1;
+        }
         cmd_ptr->argc = arg0->oper_id;
-        cmd_ptr->argv = malloc(cmd_ptr->argc);
+        cmd_ptr->argv = malloc(sizeof(char*) * cmd_ptr->argc);
         
         if (cmd_ptr->argv == NULL) {
             perror("malloc failed");
             return -1;
         }
-        strcpy_malloc(cmd_ptr->argv[0], basename(cmd_ptr->name));
+        // char *base_name = basename(arg0->str);
+        strcpy_malloc(&(cmd_ptr->argv[0]), arg0->str);  /* TODO: parse the path to file name */
+        cur_word = cur_word->next;      /* start from arg1 */
         /* End set command */
 
-        // For all arguments
-        int arg_cnt = 1;    /* the arg0 already set */
-        int read_file = 0;
-        int next_cmd = 0;
-        while (!next_cmd) {
-            /* Next word */
-            cur_word = cur_word->next;
-            if (cur_word == word_head) {
-                break;
-            }
-            word_t *data = LIST_DATA_PTR(cur_word, word_t);
+        /* For each args */
+        for (int i = 1; i < cmd_ptr->argc; i++) {
+            char *str = LIST_DATA_PTR(cur_word, word_t)->str;
+            int len = strlen(str) + 1;
+
+            cmd_ptr->argv[i] = malloc(len);
+            strncpy(cmd_ptr->argv[i], str, len);
+            cmd_ptr->argv[i][len - 1] = '\0';
             
-            /* Get arg */
-            if (data->str != NULL) {
-                strcpy_malloc(cmd_ptr->argv[arg_cnt++], data->str);
-            } else {
-                /* process the operators */
-                if (data->oper_id == oper_symbols.pipe.id) {
+            cur_word = cur_word->next;      /* next word */
+        }
+
+        /* Read file redirect until pipe */
+        char **filename_ptr = NULL;
+        int next_cmd = 0;
+        while (cur_word != word_head && !next_cmd) {
+            word_t *word = LIST_DATA_PTR(cur_word, word_t);
+
+            if (word->str == NULL) {
+                /* operator */
+                if (word->oper_id == oper_symbols.pipe.id) {
                     int fd[2];
                     if (pipe(fd) != 0) {
                         perror("pipe failed");
                         return -1;
                     }
-                    cmd_ptr->fd_w = fd[FD_WRITE_END];   /* Set current command's write fd */
-                    fd_r = fd[FD_READ_END];             /* Set next command's read fd */
-                    next_cmd = 1;                       /* Break the arg read loop */
+                    cmd_ptr->fd_w = fd[FD_WRITE_END];   /* Set this command fd to write fd */
+                    fd_r = fd[FD_READ_END];             /* Set next command fd to read fd */
+                    next_cmd = 1;
 
-                } else if (data->oper_id == oper_symbols.re_in.id) {
-
-                } else if (data->oper_id == oper_symbols.re_out.id) {
-
+                } else if (word->oper_id == oper_symbols.re_in.id) {
+                    filename_ptr = &cmd_ptr->filein_name;
+                } else if (word->oper_id == oper_symbols.re_out.id) {
+                    filename_ptr = &cmd_ptr->fileout_name;
                 } else {
-                    perror("syntax error. Unrecognized operator");
+                    perror("syntax error. operator not found");
                     return -1;
                 }
+            } else {
+                /* file name */
+                if (filename_ptr == NULL) {
+                    perror("some unknown error");
+                    return -1;
+                }
+                
+                int len = strlen(word->str) + 1;
+                if (*filename_ptr != NULL) {
+                    free(*filename_ptr);
+                }
+                *filename_ptr = malloc(len);
+                strncpy(*filename_ptr, word->str, len);
+                (*filename_ptr)[len - 1] = '\0';
             }
 
+            cur_word = cur_word->next;
         }
     }
-
+    /* End for each commands */
 
     return 0;
 }
