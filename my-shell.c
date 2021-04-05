@@ -11,15 +11,15 @@
 #include <fcntl.h>
 
 #include "list.h"
-#include "command.h"
 #include "word.h"
+#include "command.h"
 
 //----------------------------------------------------------------
 // Define
 //----------------------------------------------------------------
 #define FD_READ_END 0
 #define FD_WRITE_END 1
-#define INPUT_BUFSIZE 5
+#define INPUT_BUFSIZE 128
 
 /** ----------------------------------------------------------------
  * Global Variables

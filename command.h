@@ -19,6 +19,8 @@ typedef struct COMMAND_T {
     int fd_r;
     int fd_w;
     int fd_err;
+    char *filename_in;
+    char *filename_out;
     pid_t pid;
     int status;
 } cmd_t;
@@ -28,8 +30,5 @@ int init_cmd(cmd_t* cmd);
 
 void free_cmd_inside(void* cmd);
 
-// parse commands from input words
-// @return the real command array size, if error then return -1
-int parse_cmd(cmd_t* cmds, int max_cmd_size, word_t *words, int len);
-
+int parse_cmd(list_t *cmd_head, list_t *word_head);
 #endif /* END ifndef COMMAND_HEADER */

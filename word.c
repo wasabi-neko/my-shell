@@ -68,10 +68,12 @@ int parse_word(list_t *head, char *str)
             }
             read_ptr++;
         } /* END read one word */
-        word_len = strlen(word_str_ptr) + 1;
+        word_len = strlen(word_str_ptr) + 1;    /* !Attantion the `word_len` will be 0 when encountered an operator*/
         if (word_len <= 1 && IS_NOT_A_SYMBOL(symbol)) {
             continue;       /* only a space!, skipped! */
         }
+
+        printf("#%s#", word_str_ptr);
         
         /* Get next word_node(list_t) */
         cur_word = list_get_next(head, cur_word, sizeof(word_t));
@@ -88,9 +90,6 @@ int parse_word(list_t *head, char *str)
         /* Store one word into current cur_word,
             if the space for string is inefficient then allocate a new space */
         word_t *word_ptr = LIST_DATA_PTR(cur_word, word_t);
-        if (word_len <= 1) {
-            continue;   /* real word len equal to zero, skipped! */
-        }
         if (word_ptr->str == NULL) {
             word_ptr->str = malloc(word_len);
             if (word_ptr->str == NULL) {
@@ -105,15 +104,16 @@ int parse_word(list_t *head, char *str)
                 return -1;
             }
         }
-
         /* Copy the string */
         strncpy(word_ptr->str, word_str_ptr, word_len);
         word_ptr->str[word_len - 1] = '\0';
         /* Increse the arguments count */
         (*argc)++;
+        word_ptr = NULL;
         /* End of saveing a word */
 
         /* Deal with the operator if there's any*/
+        printf("(%d)\n", symbol.id);
         if (!IS_NOT_A_SYMBOL(symbol)) {
             /* the next word may be a old used memroy from last command */
             cur_word = list_get_next(head, cur_word, sizeof(word_t));
@@ -121,13 +121,17 @@ int parse_word(list_t *head, char *str)
             if (cur_word == NULL) {
                 return -1;
             }
+
+            printf("TEST: %s, %d\n", LIST_DATA_PTR(cur_word, word_t)->str, LIST_DATA_PTR(cur_word, word_t)->oper_id);
+
+            if (LIST_DATA_PTR(cur_word, word_t)->str != NULL) {
+                free(LIST_DATA_PTR(cur_word, word_t)->str);
+            }
             LIST_DATA_PTR(cur_word, word_t)->str = NULL;
             LIST_DATA_PTR(cur_word, word_t)->oper_id = symbol.id;
 
-            /* break the continuous arguments, reset the counter */
-            if (symbol.break_cmd) {
-                argc = NULL;
-            }
+            // /* break the continuous arguments, reset the counter */
+            argc = NULL;
         }
 
     } /* END for each argument */

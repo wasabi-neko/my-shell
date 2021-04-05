@@ -1,6 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -O1
 OBJS = command.o word.o my-shell.o
+SRCS = command.c word.c my-shell.c
 EXECUTABLE = my-shell
 
 all: $(EXECUTABLE)
@@ -15,12 +16,12 @@ test-list:
 	./test-list.out
 
 clean:
-	-rm $(OBJS)
+	-rm *.o
 	-rm $(EXECUTABLE)
 	-rm ./test-list.out
 
 $(OBJS):
-	$(CC) $(CFLAGS) -c *.c
+	$(CC) $(CFLAGS) -c $(SRCS)
 
 $(EXECUTABLE): $(OBJS)
 	$(CC) $(CFLAGS) -o $(EXECUTABLE) $(OBJS)

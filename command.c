@@ -18,10 +18,13 @@ int init_cmd(cmd_t* cmd)
     }
 
     cmd->name = NULL;
+    cmd->argc = 0;
     cmd->argv = NULL;
     cmd->fd_r = STDIN_FILENO;
     cmd->fd_w = STDOUT_FILENO;
     cmd->fd_err = STDERR_FILENO;
+    cmd->filename_in = NULL;
+    cmd->filename_out = NULL;
     cmd->pid = -1;
     cmd->status = -1;
 
