@@ -52,6 +52,34 @@ void free_cmd_inside(void* cmd)
     }
 }
 
+int parse_cmd(list_t *cmd_head, list_t *word_head)
+{
+    if (cmd_head == NULL) {
+        return -1;
+    }
+    if (word_head == NULL || word_head->next == NULL) {
+        return -1;
+    }
+
+    int cmd_cnt = 0;
+    int next_cmd = 0;
+    list_t *cur_cmd = cmd_head;
+    list_t *cur_word = word_head->next;
+
+    // For all commands
+    while (cur_word != word_head) {
+        cur_cmd = list_get_next(cmd_head, cur_cmd, sizeof(cmd_t));
+
+        list_t *arg0 = cur_word;    /* Firs arg */
+        
+        // For all arguments
+    }
+
+
+    return 0;
+}
+
+
 /**
  * Parse the string and put the result into cmds array
  */
