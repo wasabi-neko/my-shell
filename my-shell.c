@@ -39,6 +39,7 @@ void abort_line();
 int prompt();                   // Print prompt
 int execute_cmd(list_t* cmds);  // fork and exec the commands, and then wait for all of the commands
 void INT_handler();
+// TODO: print color controller
 
 /** ----------------------------------------------------------------
  * Main
@@ -64,8 +65,10 @@ int main(int argc, char **argv)
     }
 
     /* Restart point */
-    if (sigsetjmp(env, 1) == RESTART) {
+    if (sigsetjmp(env, 2) == RESTART) {
+        printf("\033[0;31m");
         printf("\nSIGINT UwU\n");
+        printf("\033[0;37m");
     }
     /* some conditional variables */
     int is_break = 0;
@@ -167,11 +170,14 @@ int main(int argc, char **argv)
 
 int prompt()
 {
+    printf("\033[0;36m");       /* Set to Cyan */
     char cwd[256];
     if (getcwd(cwd, sizeof(cwd)) != 0) {
         printf("%s", cwd);
     }
+    printf("\033[0;37m");       /* Back to white */
     printf("$ ");
+
     return 0;
 }
 
@@ -247,7 +253,7 @@ int execute_cmd(list_t* cmd_list)
             dup2(new_fd_in, STDIN_FILENO);
             dup2(new_fd_out, STDOUT_FILENO);
             if (execvp(cmd->name, cmd->argv) != 0) {
-                printf("shell: command: %s not found\n", cmd->name);
+                printf("shell: command not found: %s\n", cmd->name);
                 return -1;
             }
         } else {
