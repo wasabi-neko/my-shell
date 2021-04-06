@@ -79,6 +79,7 @@ void print_cmd(const cmd_t* cmd)
 {
     printf("-----Print cmd-----\n");
     printf("pid: %d\n", cmd->pid);
+    printf("stat: %d\n", cmd->status);
     printf("name: %s\n", cmd->name);
     printf("arg: ");
     for (int i = 0; i < cmd->argc; i++) {
@@ -208,98 +209,3 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
     return 0;
 }
 
-
-/**
- * Parse the string and put the result into cmds array
- */
-// int parse_cmd(cmd_t *cmds, char* str)
-// {
-//     // read cmd until spacial:" " "|" ">" "<"
-//     int cmd_cnt = 0;
-//     int next_cmd = 0;
-//     int next_fd_r = STDIN_FILENO;
-//     int next_fd_w = STDOUT_FILENO;
-//     int next_fd_err = STDERR_FILENO;
-
-//     //* Loop for all commands
-//     while (1) {
-
-//         // Check if too many commands
-//         if (cmd_cnt >= CMD_ARG_ARR_SIZE) {
-//             perror("too many commands");
-//             return -1;
-//         }
-
-//         // Set command
-//         if (cmds[cmd_cnt].name == NULL) {
-//             if (init_cmd(&cmds[cmd_cnt]) != 0) {
-//                 return -1;
-//             }
-//         }
-//         cmds[cmd_cnt].fd_r = next_fd_r;
-//         cmds[cmd_cnt].fd_w = next_fd_w;
-//         cmds[cmd_cnt].fd_err = next_fd_err;
-
-//         //* Loop for one command
-//         int arg_cnt = 0;
-//         int next_arg = 0;
-//         while (!next_cmd) {
-//             // Set one argument string
-//             if (cmds[cmd_cnt].argv[arg_cnt] == NULL) {
-//                 cmds[cmd_cnt].argv[arg_cnt] = malloc(CMD_ARG_STR_SIZE);
-//                 if (cmds[cmd_cnt].argv[arg_cnt] == NULL) {
-//                     perror("malloc error");
-//                     return -1;
-//                 }
-//             }
-
-
-//             //* Loop for arguments in current command
-//             // The first arguments will be the executable name
-//             char *cur_arg = &cmds[cmd_cnt].argv[arg_cnt];
-
-//             while (!next_arg) {
-//                 // if argument stering too long
-//                 if (cur_arg >= (&cmds[cmd_cnt].argv[arg_cnt] + CMD_ARG_STR_SIZE - 2)) {
-//                     perror("arg string too long");
-//                     return -1;
-//                 }
-
-//                 sscanf(str, "%c", cur_arg);
-
-//                 if (*cur_arg == ' ') {
-//                     // next argument
-//                     next_arg = 1;
-
-//                 } else if (*cur_arg == '<') {
-//                     // Redirect in
-//                     next_arg = 1;
-//                     // TODO: read file name
-
-//                 } else if (*cur_arg == '>') {
-//                     // Redirect out
-//                     next_arg = 1;
-
-//                 } else if (*cur_arg == '|') {
-//                     // Piping
-//                     next_arg = 1;
-//                     next_cmd = 1;
-
-//                     int fd[2];
-//                     pipe(fd);
-//                     cmds[cmd_cnt].fd_w = fd[FD_WRITE_END];
-//                     next_fd_r = fd[FD_READ_END];
-//                 }
-                
-//                 if (!next_arg) {
-//                     cur_arg++;
-//                 }
-//             }
-//             // END of argument Loop
-//             cur_arg = '\0';         // Set end of string
-//         }
-//         // END of command loop
-//         cmds[cmd_cnt].argv[arg_cnt + 1] = NULL;     // Set end of array
-//     }
-//     // END of All commands loop
-// }

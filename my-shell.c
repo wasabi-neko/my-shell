@@ -34,7 +34,7 @@ inline int scan_line(char *line);
 inline void abort_line();
 
 // fork and exec the commands, and then wait for all of the commands
-int execute_cmd(cmd_t* cmds, int len);  // TODO: execute_cmd
+int execute_cmd(list_t* cmds);
 
 /** ----------------------------------------------------------------
  * Main
@@ -104,27 +104,44 @@ int main(int argc, char **argv)
         }
 
         // printf("#%s#\n", buf);
+        /* Prase word */
         if (parse_word(word_head, buf) != 0) {
             perror("parse_word error");
             list_free(word_head->next, word_head, &free_word_inside);   /* reset word list */
             continue;
         }
+
+        /* Test */
         LIST_FOREACH(_ptr, word_head) {
             word_t *word = LIST_DATA_PTR(_ptr, word_t);
             printf("(%s, %d) ", word->str, word->oper_id);
         }
         printf("\n");
 
+        /* Parse command */
         if (parse_cmd(cmd_head, word_head) != 0) {
             perror("parse_cmd error");
             list_free(cmd_head->next, cmd_head, &free_cmd_inside);
             continue;
         }
+
+        /* Test */
         LIST_FOREACH(_ptr, cmd_head) {
             cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
             print_cmd(cmd);
         }
 
+        /* execute */
+        if (execute_cmd(cmd_head) != 0) {
+            perror("execute_cmd error");
+            return -1;
+        }
+
+        /* Test */
+        LIST_FOREACH(_ptr, cmd_head) {
+            cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
+            print_cmd(cmd);
+        }
         // printf("#%s#\n", basename(buf));
         fflush(stdout);
     }
@@ -137,7 +154,7 @@ int main(int argc, char **argv)
 int prompt()
 {
     // TODO: more
-    printf("I'm prompt: ");
+    printf("==================I'm prompt>");
     return 0;
 }
 
@@ -176,4 +193,60 @@ inline void abort_line()
             break;
         }
     }
+}
+
+int execute_cmd(list_t* cmd_list) 
+{   
+    /* Fork and exec all */
+    LIST_FOREACH(ptr, cmd_list) {
+        cmd_t *cmd = LIST_DATA_PTR(ptr, cmd_t);
+
+        pid_t my_child = fork();    /* fork */
+        if (my_child == -1) {
+            perror("fork failed");
+            return -1;
+        } else if (my_child == 0) {
+            /* Child */
+            int new_fd_in = cmd->fd_r;
+            int new_fd_out = cmd->fd_w;
+
+            if (cmd->filein_name != NULL) {
+                new_fd_in = open(cmd->filein_name, O_RDONLY);
+                if (new_fd_in < 0) {
+                    printf("shell: file open error:%s\n", cmd->filein_name);
+                }
+            }
+            if (cmd->fileout_name != NULL) {
+                new_fd_out = open(cmd->fileout_name, O_WRONLY);
+                if (new_fd_out < 0) {
+                    printf("shell: file open error: %s\n", cmd->fileout_name);
+                }
+            }
+            dup2(new_fd_in, STDIN_FILENO);
+            dup2(new_fd_out, STDOUT_FILENO);
+            if (execvp(cmd->name, cmd->argv) != 0) {
+                printf("shell: command: not found\n", cmd->name);
+                return -1;
+            }
+        } else {
+            /* Parent */
+            cmd->pid = my_child;
+        }
+    }
+
+
+    /* Wait all */
+    LIST_FOREACH(ptr, cmd_list) {
+        cmd_t *cmd = LIST_DATA_PTR(ptr, cmd_t);
+        if (waitpid(cmd->pid, &cmd->status, 0) < 0) {
+            perror("waitpid error");
+            return -1;
+        }
+        if (cmd->fd_r != STDIN_FILENO)
+            close(cmd->fd_r);
+        if (cmd->fd_w != STDOUT_FILENO)
+            close(cmd->fd_w);
+    }
+
+    return 0;
 }
