@@ -1,0 +1,19 @@
+total 116
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  5854 Apr  6 23:07 command.c
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   790 Apr  5 23:36 command.h
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  6312 Apr  7 00:17 command.o
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  3990 Apr  5 21:10 list.h
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   584 Apr  5 22:19 makefile
+-rwxrwxr-x 1 wasabi-neko wasabi-neko 22904 Apr  7 00:17 my-shell
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  7224 Apr  7 00:17 my-shell.c
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  8528 Apr  7 00:17 my-shell.o
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   143 Apr  5 00:41 README.md
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   618 Apr  5 22:17 symbol.c
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  1304 Apr  5 22:17 symbol.h
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  2336 Apr  7 00:17 symbol.o
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   248 Apr  6 01:41 temp.my-shell
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  1188 Apr  7 00:19 testfile
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  3257 Apr  6 01:11 test-list.c
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  4571 Apr  5 22:43 word.c
+-rw-rw-r-- 1 wasabi-neko wasabi-neko   630 Apr  5 20:10 word.h
+-rw-rw-r-- 1 wasabi-neko wasabi-neko  3824 Apr  7 00:17 word.o

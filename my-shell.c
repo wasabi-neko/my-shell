@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <fcntl.h>
+#include <signal.h>
+#include <setjmp.h>
 
 #include "list.h"
 #include "word.h"
@@ -18,23 +20,25 @@
 // Define
 //----------------------------------------------------------------
 #define INPUT_BUFSIZE 128
+#define RESTART 1
 
 /** ----------------------------------------------------------------
  * Global Variables
  * ----------------------------------------------------------------*/
+static sigjmp_buf env;
 /* Shell input buffer */
 char buf[INPUT_BUFSIZE];        /* Shell input buffer */
+list_t *cmd_head;
+list_t *word_head;
 
 /** ----------------------------------------------------------------
  * Methods
  * ----------------------------------------------------------------*/
-int INT_handler();              //TODO: INT handler
+int scan_line(char *line);
+void abort_line();
 int prompt();                   // Print prompt
-inline int scan_line(char *line);
-inline void abort_line();
-
-// fork and exec the commands, and then wait for all of the commands
-int execute_cmd(list_t* cmds);
+int execute_cmd(list_t* cmds);  // fork and exec the commands, and then wait for all of the commands
+void INT_handler();
 
 /** ----------------------------------------------------------------
  * Main
@@ -43,9 +47,12 @@ int main(int argc, char **argv)
 {
 
     // TODO: preprocess e.t. read .src file
+    /* Set INT handler */
+    signal(SIGINT, INT_handler);
+
     /* Init list */
-    list_t *cmd_head = LIST_NEW_NODE(cmd_t);
-    list_t *word_head = LIST_NEW_NODE(word_t);
+    cmd_head = LIST_NEW_NODE(cmd_t);
+    word_head = LIST_NEW_NODE(word_t);
 
     init_cmd(LIST_DATA_PTR(cmd_head, cmd_t));
     init_word(LIST_DATA_PTR(word_head, word_t));
@@ -56,6 +63,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    /* Restart point */
+    if (sigsetjmp(env, 1) == RESTART) {
+        printf("\nSIGINT UwU\n");
+    }
     /* some conditional variables */
     int is_break = 0;
     int is_error = 0;
@@ -112,11 +123,11 @@ int main(int argc, char **argv)
         }
 
         /* Test */
-        LIST_FOREACH(_ptr, word_head) {
-            word_t *word = LIST_DATA_PTR(_ptr, word_t);
-            printf("(%s, %d) ", word->str, word->oper_id);
-        }
-        printf("\n");
+        // LIST_FOREACH(_ptr, word_head) {
+        //     word_t *word = LIST_DATA_PTR(_ptr, word_t);
+        //     printf("(%s, %d) ", word->str, word->oper_id);
+        // }
+        // printf("\n");
 
         /* Parse command */
         if (parse_cmd(cmd_head, word_head) != 0) {
@@ -126,10 +137,12 @@ int main(int argc, char **argv)
         }
 
         /* Test */
+        #ifdef DEBUG
         LIST_FOREACH(_ptr, cmd_head) {
             cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
             print_cmd(cmd);
         }
+        #endif
 
         /* execute */
         if (execute_cmd(cmd_head) != 0) {
@@ -137,12 +150,13 @@ int main(int argc, char **argv)
             return -1;
         }
 
+        #ifdef DEBUG
         /* Test */
         LIST_FOREACH(_ptr, cmd_head) {
             cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
             print_cmd(cmd);
         }
-        // printf("#%s#\n", basename(buf));
+        #endif
         fflush(stdout);
     }
 
@@ -153,15 +167,19 @@ int main(int argc, char **argv)
 
 int prompt()
 {
-    // TODO: more
-    printf("==================I'm prompt>");
+    char cwd[256];
+    if (getcwd(cwd, sizeof(cwd)) != 0) {
+        printf("%s", cwd);
+    }
+    printf("$ ");
     return 0;
 }
+
 
 /**
  * @return the size of the line '\n' not including. EOF if EOF countered
  */
-inline int scan_line(char *line)
+int scan_line(char *line)
 {
     char ch;
     int size = 0;
@@ -184,11 +202,13 @@ inline int scan_line(char *line)
     return size;
 }
 
-inline void abort_line()
+void abort_line()
 {   
     char ch;
     while (1) {
-        scanf("%c", &ch);
+        if (scanf("%c", &ch) == EOF) {
+            break;
+        }
         if (ch == '\n') {
             break;
         }
@@ -217,15 +237,17 @@ int execute_cmd(list_t* cmd_list)
                 }
             }
             if (cmd->fileout_name != NULL) {
-                new_fd_out = open(cmd->fileout_name, O_WRONLY);
+                new_fd_out = open(cmd->fileout_name, O_WRONLY | O_CREAT, 0666);
                 if (new_fd_out < 0) {
                     printf("shell: file open error: %s\n", cmd->fileout_name);
                 }
             }
+            cmd->fd_r = new_fd_in;
+            cmd->fd_w = new_fd_out;
             dup2(new_fd_in, STDIN_FILENO);
             dup2(new_fd_out, STDOUT_FILENO);
             if (execvp(cmd->name, cmd->argv) != 0) {
-                printf("shell: command: not found\n", cmd->name);
+                printf("shell: command: %s not found\n", cmd->name);
                 return -1;
             }
         } else {
@@ -236,17 +258,33 @@ int execute_cmd(list_t* cmd_list)
 
 
     /* Wait all */
+    // waitpid(-1, 0, 0);
     LIST_FOREACH(ptr, cmd_list) {
         cmd_t *cmd = LIST_DATA_PTR(ptr, cmd_t);
         if (waitpid(cmd->pid, &cmd->status, 0) < 0) {
             perror("waitpid error");
-            return -1;
+            exit(1);
         }
-        if (cmd->fd_r != STDIN_FILENO)
+
+        if (cmd->fd_r != STDIN_FILENO) {
             close(cmd->fd_r);
-        if (cmd->fd_w != STDOUT_FILENO)
+        }
+        if (cmd->fd_w != STDOUT_FILENO) {
             close(cmd->fd_w);
+        }
     }
 
     return 0;
+}
+
+void INT_handler()
+{
+    /* Kill all of the children now */
+    LIST_FOREACH(_ptr, word_head) {
+        cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
+        if (cmd->pid > 0) {
+            kill(cmd->pid, SIGKILL);
+        }
+    }
+    siglongjmp(env, RESTART);
 }

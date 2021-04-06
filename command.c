@@ -82,13 +82,13 @@ void print_cmd(const cmd_t* cmd)
     printf("stat: %d\n", cmd->status);
     printf("name: %s\n", cmd->name);
     printf("arg: ");
-    for (int i = 0; i < cmd->argc; i++) {
+    for (int i = 0; i < cmd->argc + 1; i++) {
         printf("%s, ", cmd->argv[i]);
     }
     printf("\n");
     printf("fd(r:%d, w:%d)\n", cmd->fd_r, cmd->fd_w);
     printf("file(in: %s, out: %s)\n", cmd->filein_name, cmd->fileout_name);
-    printf("\n");
+    printf("-------------------\n");
 }
 
 int parse_cmd(list_t *cmd_head, list_t *word_head)
@@ -136,13 +136,14 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
             return -1;
         }
         cmd_ptr->argc = arg0->oper_id;
-        cmd_ptr->argv = malloc(sizeof(char*) * cmd_ptr->argc);
+        cmd_ptr->argv = malloc(sizeof(char*) * (cmd_ptr->argc + 1));
         
         if (cmd_ptr->argv == NULL) {
             perror("malloc failed");
             return -1;
         }
         // char *base_name = basename(arg0->str);
+        cmd_ptr->argv[cmd_ptr->argc - 1] = NULL;
         strcpy_malloc(&(cmd_ptr->argv[0]), arg0->str);  /* TODO: parse the path to file name */
         cur_word = cur_word->next;      /* start from arg1 */
         /* End set command */
