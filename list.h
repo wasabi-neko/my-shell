@@ -34,6 +34,10 @@ typedef struct LIST_T {
     for (list_t *ptr = head->next; ptr != head; ptr = ptr->next)
 #endif
 
+#ifndef LIST_FOREACH_R
+#define LIST_FOREACH_R(ptr, head) \
+    for (list_t *ptr = head->prev; ptr != head; ptr = ptr->prev)
+#endif
 
 /* The head of the list is also the tail */
 static inline int list_init(list_t *head)

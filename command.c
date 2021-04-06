@@ -105,10 +105,6 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
     }
 
     /* Init */
-    // int cmd_cnt = 0;
-    int fd_r = STDIN_FILENO;
-    int fd_w = STDOUT_FILENO;
-    int fd_err = STDERR_FILENO;
     list_t *cur_cmd = cmd_head;
     list_t *cur_word = word_head->next;
 
@@ -121,9 +117,6 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
 
         /* init command and set the fds */
         init_cmd(cmd_ptr);
-        cmd_ptr->fd_r = fd_r;
-        cmd_ptr->fd_w = fd_w;
-        cmd_ptr->fd_err = fd_err;
 
         /* Set command from word0 */
         word_t *arg0 = LIST_DATA_PTR(cur_word, word_t);    /* Firs arg */
@@ -169,15 +162,7 @@ int parse_cmd(list_t *cmd_head, list_t *word_head)
             if (word->str == NULL) {
                 /* operator */
                 if (word->oper_id == oper_symbols.pipe.id) {
-                    int fd[2];
-                    if (pipe(fd) != 0) {
-                        perror("pipe failed");
-                        return -1;
-                    }
-                    cmd_ptr->fd_w = fd[FD_WRITE_END];   /* Set this command fd to write fd */
-                    fd_r = fd[FD_READ_END];             /* Set next command fd to read fd */
                     next_cmd = 1;
-
                 } else if (word->oper_id == oper_symbols.re_in.id) {
                     filename_ptr = &cmd_ptr->filein_name;
                 } else if (word->oper_id == oper_symbols.re_out.id) {

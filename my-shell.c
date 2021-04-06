@@ -34,6 +34,7 @@ list_t *word_head;
 /** ----------------------------------------------------------------
  * Methods
  * ----------------------------------------------------------------*/
+void fatal(int val, int assert);
 int scan_line(char *line);
 void abort_line();
 int prompt();                   // Print prompt
@@ -145,6 +146,7 @@ int main(int argc, char **argv)
             cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
             print_cmd(cmd);
         }
+        printf("---END pre exec---\n");
         #endif
 
         /* execute */
@@ -166,6 +168,14 @@ int main(int argc, char **argv)
     list_free(word_head->next, word_head, &free_word_inside);
     list_free(cmd_head, cmd_head, &free_cmd_inside);
     return 0;
+}
+
+void fatal(int val, int assert)
+{
+    if (val != assert) {
+        perror("Fatal Error");
+        exit(-1);
+    }
 }
 
 int prompt()
@@ -223,60 +233,96 @@ void abort_line()
 
 int execute_cmd(list_t* cmd_list) 
 {   
+    /* init fd */
+    int fd_r = STDIN_FILENO;
+    int fd_w = STDOUT_FILENO;
+
     /* Fork and exec all */
     LIST_FOREACH(ptr, cmd_list) {
         cmd_t *cmd = LIST_DATA_PTR(ptr, cmd_t);
+        cmd->fd_r = fd_r;   /* the fd from last command */
+        cmd->fd_w = fd_w;
 
-        pid_t my_child = fork();    /* fork */
+        /* Redirect file if there's any */
+        if (cmd->filein_name != NULL) {
+            cmd->fd_r = open(cmd->filein_name, O_RDONLY);
+            if (cmd->fd_r < 0) {
+                printf("shell: file open error:%s\n", cmd->filein_name);
+                continue;
+            }
+        }
+        if (cmd->fileout_name != NULL) {
+            cmd->fd_w = open(cmd->fileout_name, O_WRONLY | O_CREAT, 0666);
+            if (cmd->fd_w < 0) {
+                printf("shell: file open error: %s\n", cmd->fileout_name);
+                continue;
+            }
+        }
+
+        /* Pipe if there's a next cmd*/
+        if (ptr->next != cmd_list) {
+            if (cmd->fileout_name != NULL) {
+                /* If last command redirect to file, then read the input from the file */
+                fd_r  = open(cmd->fileout_name, O_RDONLY);
+            } else {
+                int fd[2];
+                fatal(pipe(fd), 0);
+                cmd->fd_w = fd[FD_WRITE_END];
+                fd_r = fd[FD_READ_END];
+            }
+        }
+
+        /* Frok Time! */
+        pid_t my_child = fork();
         if (my_child == -1) {
-            perror("fork failed");
-            return -1;
+            /* Parent on error */
+            perror("fork failed"); exit(-1);
         } else if (my_child == 0) {
             /* Child */
-            int new_fd_in = cmd->fd_r;
-            int new_fd_out = cmd->fd_w;
+            if (cmd->fd_r != STDIN_FILENO) {
+                dup2(cmd->fd_r, STDIN_FILENO);      /* change stdin to pipe */
+                close(cmd->fd_r);                   /* No longer needed */
+            }
+            if (cmd->fd_w != STDOUT_FILENO) {
+                dup2(cmd->fd_w, STDOUT_FILENO);
+                close(cmd->fd_w);
+            }
 
-            if (cmd->filein_name != NULL) {
-                new_fd_in = open(cmd->filein_name, O_RDONLY);
-                if (new_fd_in < 0) {
-                    printf("shell: file open error:%s\n", cmd->filein_name);
-                }
-            }
-            if (cmd->fileout_name != NULL) {
-                new_fd_out = open(cmd->fileout_name, O_WRONLY | O_CREAT, 0666);
-                if (new_fd_out < 0) {
-                    printf("shell: file open error: %s\n", cmd->fileout_name);
-                }
-            }
-            cmd->fd_r = new_fd_in;
-            cmd->fd_w = new_fd_out;
-            dup2(new_fd_in, STDIN_FILENO);
-            dup2(new_fd_out, STDOUT_FILENO);
             if (execvp(cmd->name, cmd->argv) != 0) {
-                printf("shell: command not found: %s\n", cmd->name);
-                return -1;
+                fprintf(stderr, "shell: command not found: %s\n", cmd->name);
+                if (cmd->fd_r != STDIN_FILENO)
+                    close(cmd->fd_r);
+                if (cmd->fd_w != STDOUT_FILENO)
+                    close(cmd->fd_w);
+                exit(-1);
             }
+            /* NEVER REACH */
         } else {
             /* Parent */
             cmd->pid = my_child;
+            /* The pipe is no longer needed in parent process */
+            if (cmd->fd_r != STDIN_FILENO) close(cmd->fd_r);
+            if (cmd->fd_w != STDOUT_FILENO) close(cmd->fd_w);
         }
     }
 
+    #ifdef DEBUG
+    /* Test */
+    LIST_FOREACH(_ptr, cmd_head) {
+        cmd_t *cmd = LIST_DATA_PTR(_ptr, cmd_t);
+        print_cmd(cmd);
+    }
+    printf("---before wait----\n");
+    #endif
 
     /* Wait all */
-    // waitpid(-1, 0, 0);
     LIST_FOREACH(ptr, cmd_list) {
         cmd_t *cmd = LIST_DATA_PTR(ptr, cmd_t);
+        if (cmd->pid <= 0)
+            continue;
         if (waitpid(cmd->pid, &cmd->status, 0) < 0) {
             perror("waitpid error");
-            exit(1);
-        }
-
-        if (cmd->fd_r != STDIN_FILENO) {
-            close(cmd->fd_r);
-        }
-        if (cmd->fd_w != STDOUT_FILENO) {
-            close(cmd->fd_w);
+            return -1;
         }
     }
 
