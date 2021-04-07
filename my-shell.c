@@ -185,7 +185,6 @@ int prompt()
     if (getcwd(cwd, sizeof(cwd)) != 0) {
         printf("%s", cwd);
     }
-    printf("aaa:");
     printf("\033[0;37m");       /* Back to white */
     printf("$ ");
 
