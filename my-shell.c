@@ -78,13 +78,13 @@ int main(int argc, char **argv)
     /* Main Loop */
     while (!is_break) {
         /* reset */
-        fflush(stdout);
         is_error = 0;
 
         if (prompt() != 0) {
             perror("prompt error");
             is_error = 1;
         }
+        fflush(stdout);
 
         /* Read input from stdin */
         memset(buf, 0, INPUT_BUFSIZE);
@@ -127,11 +127,13 @@ int main(int argc, char **argv)
         }
 
         /* Test */
-        // LIST_FOREACH(_ptr, word_head) {
-        //     word_t *word = LIST_DATA_PTR(_ptr, word_t);
-        //     printf("(%s, %d) ", word->str, word->oper_id);
-        // }
-        // printf("\n");
+#ifdef DEBUG
+        LIST_FOREACH(_ptr, word_head) {
+            word_t *word = LIST_DATA_PTR(_ptr, word_t);
+            printf("(%s, %d) ", word->str, word->oper_id);
+        }
+        printf("\n");
+#endif
 
         /* Parse command */
         if (parse_cmd(cmd_head, word_head) != 0) {
@@ -180,13 +182,32 @@ void fatal(int val, int assert)
 
 int prompt()
 {
-    printf("\033[0;36m");       /* Set to Cyan */
-    char cwd[256];
+    char uname[128], hname[128], cwd[128];
+
+	//printf("\e[1m");  /*- turn on bold */
+	/* user name */
+    if (getlogin_r(uname, sizeof(uname)) == 0) {
+        printf("\033[0;32m");	/* Trun green*/
+        printf("%s", uname);
+    }
+    printf("@");
+
+    // /* host name*/
+    if (gethostname(hname, sizeof(hname)) == 0) {
+        printf("\033[0;32m");
+        printf("%s", hname);
+    }
+    printf("\033[0;37m");
+    printf(":");
+
     if (getcwd(cwd, sizeof(cwd)) != 0) {
+		printf("\033[0;36m");       /* Set to Cyan */
         printf("%s", cwd);
     }
+	printf("\n");				/* Next line*/
     printf("\033[0;37m");       /* Back to white */
     printf("$ ");
+	//printf("\e[0m"); /* turn off bold */
 
     return 0;
 }
